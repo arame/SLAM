@@ -28,13 +28,16 @@ class Robot:
         self.measurement_noise = 0.0
         self.world_size = world_size
         self.measurement_range = measurement_range
+        # If the meaasurement range is set to -1, 
+        # then this implies the measurement range covers the whole world
+        self.no_range = measurement_range == -1
         self.x = world_size / 2.0
         self.y = world_size / 2.0
         self.motion_noise = motion_noise
         self.measurement_noise = measurement_noise
         self.landmarks = []
         self.num_landmarks = 0
-    
+   
     
     # returns a positive, random float
     def rand(self):
@@ -78,11 +81,10 @@ class Robot:
             '''
            
         measurements = []
-        
         for i in range(len(self.landmarks)):
             dx = self.landmarks[i][0] - self.x + self.noise()
             dy = self.landmarks[i][1] - self.y + self.noise()
-            if self.measurement_range == -1 or (dx < self.measurement_range and dy < self.measurement_range):
+            if self.no_range or (abs(dx) < self.measurement_range and abs(dy) < self.measurement_range):
                 measurements.append([i, dx, dy])
         return measurements
 
