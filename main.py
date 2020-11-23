@@ -100,7 +100,7 @@ def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
     print("omega = ")
     reformt_omega = reformat_omega(omega)
     reformt_xi = reformat_xi(xi)
-    mu = np.dot(inv(reformt_omega),reformt_xi)
+    mu = inv(reformt_omega) @ reformt_xi
     return mu # return `mu`
 
 def reformat_omega(omega):
