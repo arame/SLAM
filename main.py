@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.linalg import inv
 from pandas import DataFrame
 import seaborn as sns
 from robot_class import Robot
@@ -37,18 +38,9 @@ def main():
     plt.rcParams["figure.figsize"] = (10,7)
 
     # display omega (need to convert omega to a 2x2 matrix for the heatmap to show)
-    display_omega = []
-    for i in range(len(initial_omega)):
-        for k in range(2):
-            row = []
-            for j in range(len(initial_omega)):
-                item = initial_omega[i][j]
-                for l in range(2):
-                    row.append(item[k][l])
-            display_omega.append(row)
-
+    display_omega = reformat_omega(initial_omega)
     sns.heatmap(display_omega, cmap='Blues', annot=True, linewidths=.5)
-    plt.show()
+    #plt.show()
     # define  figure size
     plt.rcParams["figure.figsize"] = (1,7)
 
@@ -76,20 +68,61 @@ def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
     omega, xi = initialize_constraints(N, num_landmarks, world_size)
     ## TODO: Iterate through each time step in the data
     ## get all the motion and measurement data as you iterate
+    i_robot = -1
+    side_length = len(omega)
+    measurement_noise_val = 1.0 / measurement_noise
+    motion_noise_val = 1.0/motion_noise
     for (measurement, motion) in data:
-        i = 0
+        i_robot += 1
+
     ## TODO: update the constraint matrix/vector to account for all *measurements*
     ## this should be a series of additions that take into account the measurement noise
-
+        for i in range(len(measurement)):
+            i_landmark = N + measurement[i][0]
+            for j in range(2):
+                omega[i_landmark][i_landmark][j][j] += measurement_noise_val
+                omega[i_robot][i_robot][j][j]       += measurement_noise_val
+                omega[i_robot][i_landmark][j][j]    -= measurement_noise_val
+                omega[i_landmark][i_robot][j][j]    -= measurement_noise_val
+                measurement_val = measurement[i][j + 1]/measurement_noise
+                xi[i_landmark][j]                   += measurement_val
+                xi[i_robot][j]                      -= measurement_val
     ## TODO: update the constraint matrix/vector to account for all *motion* and motion noise
-
+        for j in range(2):    
+            omega[i_robot][i_robot][j][j]           += motion_noise_val
+            omega[i_robot + 1][i_robot + 1][j][j]   += motion_noise_val
+            omega[i_robot][i_robot+1][j][j]         -= motion_noise_val
+            omega[i_robot+1][i_robot][j][j]         -= motion_noise_val
+            xi[i_robot][j]                          -= motion[j]/motion_noise
+            xi[i_robot+1][j]                        += motion[j]/motion_noise
     ## TODO: After iterating through all the data
     ## Compute the best estimate of poses and landmark positions
     ## using the formula, omega_inverse * Xi
-    mu = []
-    
+    print("omega = ")
+    reformt_omega = reformat_omega(omega)
+    reformt_xi = reformat_xi(xi)
+    mu = np.dot(inv(reformt_omega),reformt_xi)
     return mu # return `mu`
 
+def reformat_omega(omega):
+    reformat_omega = []
+    for i in range(len(omega)):
+        for k in range(2):
+            row = []
+            for j in range(len(omega)):
+                item = omega[i][j]
+                for l in range(2):
+                    row.append(item[k][l])
+            reformat_omega.append(row)
+    return reformat_omega
+
+def reformat_xi(xi):
+    reformat_xi = []
+    for i in range(len(xi)):
+        for j in range(2):
+            reformat_xi.append(xi[i][j])
+    matrix_xi = np.array(reformat_xi).T
+    return matrix_xi
 
 def get_poses_landmarks(mu, N, num_landmarks):
     # create a list of poses
@@ -123,12 +156,9 @@ def initialize_constraints(N, num_landmarks, world_size):
     
     ## TODO: Define the constraint matrix, Omega, with two initial "strength" values
     ## for the initial x, y location of our robot
-    middle_loc = [[1, 0], [0, 1]]
     side_len = N + num_landmarks
-    coords = [[0, 0], [0, 0]]
-    omega = [[middle_loc if x==0 and y==0 else coords for x in range(side_len)] for y in range(side_len)]
-    xi = [[0] for x in range(side_len)]
-    xi[0][0] = int(world_size / 2)
+    omega = [[[[1, 0], [0, 1]] if x==0 and y==0 else [[0, 0], [0, 0]] for x in range(side_len)] for y in range(side_len)]
+    xi = [[int(world_size / 2) if y==0 else 0 for x in range(2)] for y in range(side_len)]
     return omega, xi
 
 
