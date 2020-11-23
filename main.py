@@ -69,7 +69,6 @@ def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
     ## TODO: Iterate through each time step in the data
     ## get all the motion and measurement data as you iterate
     i_robot = -1
-    side_length = len(omega)
     measurement_noise_val = 1.0 / measurement_noise
     motion_noise_val = 1.0/motion_noise
     for (measurement, motion) in data:
