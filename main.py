@@ -57,7 +57,17 @@ def main():
         # and print them out
         poses, landmarks = get_poses_landmarks(mu, N, num_landmarks)
         print_all(poses, landmarks)
+    # Display the final world!
 
+    # define figure size
+    plt.rcParams["figure.figsize"] = (20,20)
+
+    # check if poses has been created
+    if 'poses' in locals():
+        # print out the last pose
+        print('Last pose: ', poses[-1])
+        # display the last position of the robot *and* the landmark positions
+        display_world(int(world_size), poses[-1], landmarks)
     print("*** THE END ***")
 
 ## slam takes in 6 arguments and returns mu, 
@@ -97,11 +107,29 @@ def slam(data, N, num_landmarks, world_size, motion_noise, measurement_noise):
     ## TODO: After iterating through all the data
     ## Compute the best estimate of poses and landmark positions
     ## using the formula, omega_inverse * Xi
-    print("omega = ")
     reformt_omega = reformat_omega(omega)
     reformt_xi = reformat_xi(xi)
+    #display_omega_xi(reformt_omega, reformt_xi)
+    print("omega = ", reformt_omega)
+    print("=================================================================")
+    print("xi = ", reformt_xi)
+    print("=================================================================")
     mu = inv(reformt_omega) @ reformt_xi
     return mu # return `mu`
+
+def display_omega_xi(omega, xi):
+    # define figure size
+    plt.clf()
+    plt.rcParams["figure.figsize"] = (30,24)
+
+    # display omega
+    sns.heatmap(DataFrame(omega), cmap='Blues', annot=True, linewidths=.5)
+    plt.show()
+    plt.rcParams["figure.figsize"] = (1,17)
+
+    # display xi
+    sns.heatmap(DataFrame(xi), cmap='Oranges', annot=True, linewidths=.5)
+    plt.show()
 
 def reformat_omega(omega):
     reformat_omega = []
